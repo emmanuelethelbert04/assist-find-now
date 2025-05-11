@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
@@ -54,7 +53,7 @@ const Home = () => {
     {
       id: 2,
       name: 'Robert T.',
-      text: 'I've been using ServiceConnect for all my home repairs. The quality of providers is consistently high.',
+      text: "I've been using ServiceConnect for all my home repairs. The quality of providers is consistently high.",
       rating: 4
     },
     {
