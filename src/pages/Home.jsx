@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Layout from "../components/layout/Layout";
@@ -6,6 +7,7 @@ import { ref, get, query, orderByChild, limitToLast } from "firebase/database";
 import { db } from "../firebase/config";
 import RatingStars from "../components/ratings/RatingStars";
 import useProviderRatings from "../hooks/useProviderRatings";
+import { Card, CardContent } from "../components/ui/card";
 
 const Home = () => {
   const [featuredProviders, setFeaturedProviders] = useState([]);
@@ -42,7 +44,7 @@ const Home = () => {
     const { averageRating, totalReviews } = useProviderRatings(provider.id);
     
     return (
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden transition-all hover:shadow-md">
+      <Card className="bg-white rounded-lg shadow-sm overflow-hidden transition-all hover:shadow-md">
         <div className="h-48 bg-gray-200 relative">
           {provider.photoURL ? (
             <img
@@ -64,7 +66,7 @@ const Home = () => {
           )}
         </div>
         
-        <div className="p-4">
+        <CardContent className="p-4">
           <h3 className="font-semibold text-lg">{provider.displayName}</h3>
           
           <div className="flex items-center mt-1">
@@ -83,8 +85,8 @@ const Home = () => {
               View Profile
             </Button>
           </Link>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     );
   };
 
@@ -138,19 +140,33 @@ const Home = () => {
     }
   ];
 
+  // Sample profile images for black service providers
+  const blackServiceProviderImages = [
+    "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?q=80&w=500&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1507152832244-10d45c7eda57?q=80&w=500&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1573497019236-17f8177b81e8?q=80&w=500&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1531384441138-2736e62e0919?q=80&w=500&auto=format&fit=crop"
+  ];
+
+  // Updated featured providers with black service provider images
+  const updatedFeaturedProviders = featuredProviders.map((provider, index) => ({
+    ...provider,
+    photoURL: blackServiceProviderImages[index % blackServiceProviderImages.length]
+  }));
+
   return (
     <Layout>
-      {/* Hero Section */}
+      {/* Hero Section with Black Provider Image */}
       <section className="relative">
         <div className="bg-gradient-to-r from-brand-darkBlue to-brand-blue py-16 md:py-24">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col md:flex-row items-center">
               <div className="md:w-1/2 text-center md:text-left mb-8 md:mb-0">
                 <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight">
-                  Find Expert Services <br />for All Your Needs
+                  Supporting Black <br />Entrepreneurship &amp; Excellence
                 </h1>
                 <p className="mt-4 text-lg text-white/90 max-w-lg">
-                  Connect with trusted local professionals ready to help with home repairs, maintenance, and more.
+                  Connect with trusted professionals from your community ready to help with home repairs, maintenance, and more.
                 </p>
                 <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
                   <Link to="/providers">
@@ -168,8 +184,8 @@ const Home = () => {
               <div className="md:w-1/2">
                 <div className="relative rounded-lg overflow-hidden shadow-xl">
                   <img
-                    src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158"
-                    alt="Professional service provider helping a client"
+                    src="https://images.unsplash.com/photo-1536337005238-94b997371b40?q=80&w=1000&auto=format&fit=crop"
+                    alt="Professional Black service provider helping a client"
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -247,7 +263,7 @@ const Home = () => {
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900">Featured Providers</h2>
             <p className="mt-4 text-xl text-gray-600 max-w-2xl mx-auto">
-              Meet our top-rated service professionals
+              Meet our top-rated service professionals from your community
             </p>
           </div>
 
@@ -259,8 +275,8 @@ const Home = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featuredProviders.length > 0 ? (
-                featuredProviders.map(provider => (
+              {updatedFeaturedProviders.length > 0 ? (
+                updatedFeaturedProviders.map(provider => (
                   <ProviderCard key={provider.id} provider={provider} />
                 ))
               ) : (

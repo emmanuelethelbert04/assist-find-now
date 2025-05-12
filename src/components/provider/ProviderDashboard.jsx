@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import ServiceList from './ServiceList';
 import ProfileForm from './ProfileForm';
 import RequestList from './RequestList';
+import ProviderReviews from './ProviderReviews';
 
 const ProviderDashboard = () => {
   const [activeTab, setActiveTab] = useState('profile');
@@ -118,10 +119,7 @@ const ProviderDashboard = () => {
           )}
           
           {activeTab === 'reviews' && (
-            <div>
-              <h2 className="text-xl font-semibold mb-4">My Reviews</h2>
-              <p className="text-gray-500">No reviews yet.</p>
-            </div>
+            <ProviderReviews />
           )}
         </div>
       </div>
