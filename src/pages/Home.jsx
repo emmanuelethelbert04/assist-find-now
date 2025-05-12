@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Layout from "../components/layout/Layout";
@@ -140,12 +139,12 @@ const Home = () => {
     }
   ];
 
-  // Sample profile images for black service providers
+  // Sample profile images for black service providers - updated with more professional images
   const blackServiceProviderImages = [
-    "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?q=80&w=500&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1507152832244-10d45c7eda57?q=80&w=500&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1573497019236-17f8177b81e8?q=80&w=500&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1531384441138-2736e62e0919?q=80&w=500&auto=format&fit=crop"
+    "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=600&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1539635278303-d4002c07eae3?q=80&w=600&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1560525821-d5615ef80c69?q=80&w=600&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=600&auto=format&fit=crop"
   ];
 
   // Updated featured providers with black service provider images
@@ -156,7 +155,7 @@ const Home = () => {
 
   return (
     <Layout>
-      {/* Hero Section with Black Provider Image */}
+      {/* Hero Section with Enhanced Black Provider Image */}
       <section className="relative">
         <div className="bg-gradient-to-r from-brand-darkBlue to-brand-blue py-16 md:py-24">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -182,12 +181,13 @@ const Home = () => {
                 </div>
               </div>
               <div className="md:w-1/2">
-                <div className="relative rounded-lg overflow-hidden shadow-xl">
+                <div className="relative rounded-lg overflow-hidden shadow-2xl">
                   <img
-                    src="https://images.unsplash.com/photo-1536337005238-94b997371b40?q=80&w=1000&auto=format&fit=crop"
-                    alt="Professional Black service provider helping a client"
+                    src="https://images.unsplash.com/photo-1556761175-b413da4baf72?q=80&w=1000&auto=format&fit=crop"
+                    alt="Professional Black business owner helping a client"
                     className="w-full h-full object-cover"
                   />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
                 </div>
               </div>
             </div>
