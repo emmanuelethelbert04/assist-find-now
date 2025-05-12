@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Layout from "../components/layout/Layout";
@@ -6,7 +5,7 @@ import { Button } from "../components/ui/button";
 import { ref, get, query, orderByChild, limitToLast } from "firebase/database";
 import { db } from "../firebase/config";
 import RatingStars from "../components/ratings/RatingStars";
-import { useProviderRatings } from "../hooks/useProviderRatings";
+import useProviderRatings from "../hooks/useProviderRatings";
 
 const Home = () => {
   const [featuredProviders, setFeaturedProviders] = useState([]);
