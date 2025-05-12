@@ -1,228 +1,280 @@
 
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { Button } from '../components/ui/button';
-import { Search, CheckCircle, Link2, Star, ArrowRight } from 'lucide-react';
-import Layout from '../components/layout/Layout';
-import { Card, CardContent } from '../components/ui/card';
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import Layout from "../components/layout/Layout";
+import { Button } from "../components/ui/button";
+import { ref, get, query, orderByChild, limitToLast } from "firebase/database";
+import { db } from "../firebase/config";
+import RatingStars from "../components/ratings/RatingStars";
+import { useProviderRatings } from "../hooks/useProviderRatings";
 
 const Home = () => {
-  const serviceCategories = [
-    { name: 'Plumbing', icon: '🔧' },
-    { name: 'Electrical', icon: '⚡' },
-    { name: 'Cleaning', icon: '✨' },
-    { name: 'Gardening', icon: '🌿' },
-    { name: 'Home Repair', icon: '🏠' },
-    { name: 'Painting', icon: '🎨' },
-    { name: 'Moving', icon: '📦' },
+  const [featuredProviders, setFeaturedProviders] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFeaturedProviders = async () => {
+      try {
+        const providersRef = ref(db, "providers");
+        const providersQuery = query(providersRef, orderByChild("createdAt"), limitToLast(4));
+        const snapshot = await get(providersQuery);
+        
+        if (snapshot.exists()) {
+          const providersData = snapshot.val();
+          const providersArray = Object.keys(providersData).map(key => ({
+            id: key,
+            ...providersData[key]
+          }));
+          
+          // Sort randomly for featured section
+          setFeaturedProviders(providersArray.sort(() => 0.5 - Math.random()));
+        }
+      } catch (error) {
+        console.error("Error fetching featured providers:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchFeaturedProviders();
+  }, []);
+
+  const ProviderCard = ({ provider }) => {
+    const { averageRating, totalReviews } = useProviderRatings(provider.id);
+    
+    return (
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden transition-all hover:shadow-md">
+        <div className="h-48 bg-gray-200 relative">
+          {provider.photoURL ? (
+            <img
+              src={provider.photoURL}
+              alt={provider.displayName}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-r from-brand-blue to-brand-darkBlue flex items-center justify-center">
+              <span className="text-4xl font-bold text-white">
+                {provider.displayName?.charAt(0) || '?'}
+              </span>
+            </div>
+          )}
+          {provider.category && (
+            <div className="absolute top-2 right-2 bg-brand-orange text-white text-xs px-2 py-1 rounded">
+              {provider.category}
+            </div>
+          )}
+        </div>
+        
+        <div className="p-4">
+          <h3 className="font-semibold text-lg">{provider.displayName}</h3>
+          
+          <div className="flex items-center mt-1">
+            <RatingStars rating={averageRating} size="small" />
+            <span className="text-sm text-gray-500 ml-1">
+              ({totalReviews})
+            </span>
+          </div>
+          
+          {provider.bio && (
+            <p className="mt-2 text-gray-600 text-sm line-clamp-2">{provider.bio}</p>
+          )}
+          
+          <Link to={`/providers/${provider.id}`}>
+            <Button className="w-full mt-3 bg-brand-blue hover:bg-brand-darkBlue text-white">
+              View Profile
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  };
+
+  // Service categories
+  const categories = [
+    { name: "Plumbing", icon: "🔧" },
+    { name: "Electrical", icon: "💡" },
+    { name: "Cleaning", icon: "🧹" },
+    { name: "Home Repair", icon: "🏠" },
+    { name: "Gardening", icon: "🌱" },
+    { name: "Moving", icon: "📦" },
+    { name: "Tutoring", icon: "📚" },
+    { name: "Beauty", icon: "💇" }
   ];
 
-  const featuredProviders = [
+  // How it works steps
+  const steps = [
     {
-      id: 1,
-      name: 'John Smith',
-      service: 'Plumbing',
-      rating: 4.8,
-      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80',
-      caption: 'Professional plumber with 10+ years of experience in residential repairs'
+      title: "Find a Provider",
+      description: "Browse through our vetted service providers based on your needs",
+      icon: "🔍"
     },
     {
-      id: 2,
-      name: 'Sarah Johnson',
-      service: 'Electrical',
-      rating: 4.9,
-      image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80',
-      caption: 'Licensed electrician specializing in home wiring and installations'
+      title: "Book a Service",
+      description: "Schedule your appointment at a time that works for you",
+      icon: "📅"
     },
     {
-      id: 3,
-      name: 'David Chen',
-      service: 'Cleaning',
-      rating: 4.7,
-      image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80',
-      caption: 'Thorough home cleaning services with eco-friendly products'
-    },
+      title: "Get it Done",
+      description: "Enjoy quality service and leave a review when completed",
+      icon: "✅"
+    }
   ];
 
+  // Testimonials
   const testimonials = [
     {
-      id: 1,
-      name: 'Michelle R.',
-      text: 'Found an amazing plumber within minutes. The service was excellent and reasonably priced!',
-      rating: 5
+      quote: "I found an amazing electrician within minutes. The service was outstanding!",
+      author: "Marcus Johnson",
+      role: "Homeowner"
     },
     {
-      id: 2,
-      name: 'Robert T.',
-      text: "I've been using ServiceConnect for all my home repairs. The quality of providers is consistently high.",
-      rating: 4
+      quote: "As a service provider, this platform has helped me grow my business tremendously.",
+      author: "Tasha Williams",
+      role: "Professional Cleaner"
     },
     {
-      id: 3,
-      name: 'Jessica K.',
-      text: 'As someone new to the area, this platform helped me find trustworthy local service providers quickly.',
-      rating: 5
-    },
+      quote: "The quality of providers on this platform is exceptional. Highly recommended!",
+      author: "David Chen",
+      role: "Small Business Owner"
+    }
   ];
 
   return (
     <Layout>
-      {/* Hero Section - Enhanced with stronger gradient, typography and animations */}
-      <section className="bg-gradient-to-r from-brand-darkBlue to-brand-blue text-white py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center">
-            <div className="md:w-1/2 md:pr-8">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 animate-fade-in tracking-tight">
-                Find Trusted Service Providers Near You
-              </h1>
-              <p className="text-xl md:text-2xl mb-8 text-gray-100 animate-fade-in" style={{animationDelay: "0.2s"}}>
-                Connect with local professionals for all your service needs.
-                From plumbers to cleaners, our platform has skilled experts ready to help.
-              </p>
-              <div className="flex flex-wrap gap-4 animate-fade-in" style={{animationDelay: "0.3s"}}>
-                <Link to="/providers">
-                  <Button className="bg-white text-brand-blue hover:bg-gray-100 text-lg px-8 py-6 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center">
-                    Find Services
-                    <ArrowRight className="ml-2" />
-                  </Button>
-                </Link>
-                <Link to="/signup">
-                  <Button className="bg-brand-orange hover:bg-orange-600 text-white text-lg px-8 py-6 font-semibold shadow-lg hover:shadow-xl transition-all duration-300">
-                    Join as Provider
-                  </Button>
-                </Link>
+      {/* Hero Section */}
+      <section className="relative">
+        <div className="bg-gradient-to-r from-brand-darkBlue to-brand-blue py-16 md:py-24">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col md:flex-row items-center">
+              <div className="md:w-1/2 text-center md:text-left mb-8 md:mb-0">
+                <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight">
+                  Find Expert Services <br />for All Your Needs
+                </h1>
+                <p className="mt-4 text-lg text-white/90 max-w-lg">
+                  Connect with trusted local professionals ready to help with home repairs, maintenance, and more.
+                </p>
+                <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+                  <Link to="/providers">
+                    <Button className="w-full sm:w-auto bg-brand-orange hover:bg-orange-600 text-white text-lg py-6 px-8">
+                      Find a Provider
+                    </Button>
+                  </Link>
+                  <Link to="/signup">
+                    <Button variant="outline" className="w-full sm:w-auto bg-white hover:bg-gray-100 text-brand-blue text-lg py-6 px-8 border-2 border-white">
+                      Join as a Provider
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+              <div className="md:w-1/2">
+                <div className="relative rounded-lg overflow-hidden shadow-xl">
+                  <img
+                    src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158"
+                    alt="Professional service provider helping a client"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
               </div>
             </div>
-            <div className="md:w-1/2 mt-10 md:mt-0 animate-fade-in" style={{animationDelay: "0.4s"}}>
-              <img 
-                src="https://images.unsplash.com/photo-1521791136064-7986c2920216?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80" 
-                alt="Service provider and client shaking hands" 
-                className="rounded-lg shadow-2xl hover:shadow-xl transition-all duration-300 border-4 border-white/20"
-              />
-            </div>
+          </div>
+        </div>
+
+        {/* Wave divider */}
+        <div className="absolute bottom-0 w-full">
+          <svg
+            viewBox="0 0 1440 120"
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-full h-auto fill-white"
+          >
+            <path
+              d="M0,64L80,69.3C160,75,320,85,480,80C640,75,800,53,960,48C1120,43,1280,53,1360,58.7L1440,64L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z"
+            ></path>
+          </svg>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900">How It Works</h2>
+            <p className="mt-4 text-xl text-gray-600 max-w-2xl mx-auto">
+              Get the help you need in just a few simple steps
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {steps.map((step, index) => (
+              <div key={index} className="bg-gray-50 rounded-lg p-6 text-center">
+                <div className="text-4xl mb-4">{step.icon}</div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  {step.title}
+                </h3>
+                <p className="text-gray-600">{step.description}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* How It Works - Enhanced with better visual hierarchy */}
-      <section className="py-20">
+      {/* Top Services */}
+      <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">How It Works</h2>
-            <div className="w-20 h-1 bg-brand-orange mx-auto mb-6"></div>
-            <p className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
-              Finding the right service provider has never been easier
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900">Top Services</h2>
+            <p className="mt-4 text-xl text-gray-600 max-w-2xl mx-auto">
+              Browse our most popular service categories
             </p>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-            <div className="bg-white p-8 rounded-xl shadow-md text-center hover:shadow-lg transition-all duration-300 border border-gray-100">
-              <div className="w-20 h-20 bg-blue-100 text-brand-blue rounded-full flex items-center justify-center mx-auto mb-6">
-                <Search className="h-10 w-10" />
-              </div>
-              <h3 className="text-2xl font-semibold mb-4">Search</h3>
-              <p className="text-gray-600">
-                Search for service providers based on your needs, location, and budget
-              </p>
-            </div>
-            
-            <div className="bg-white p-8 rounded-xl shadow-md text-center hover:shadow-lg transition-all duration-300 border border-gray-100 transform md:translate-y-4">
-              <div className="w-20 h-20 bg-blue-100 text-brand-blue rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircle className="h-10 w-10" />
-              </div>
-              <h3 className="text-2xl font-semibold mb-4">Select</h3>
-              <p className="text-gray-600">
-                Choose from our verified providers with detailed profiles and reviews
-              </p>
-            </div>
-            
-            <div className="bg-white p-8 rounded-xl shadow-md text-center hover:shadow-lg transition-all duration-300 border border-gray-100">
-              <div className="w-20 h-20 bg-blue-100 text-brand-blue rounded-full flex items-center justify-center mx-auto mb-6">
-                <Link2 className="h-10 w-10" />
-              </div>
-              <h3 className="text-2xl font-semibold mb-4">Connect</h3>
-              <p className="text-gray-600">
-                Request services and communicate directly with your chosen provider
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* Service Categories - Enhanced with better card design */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Popular Service Categories</h2>
-            <div className="w-20 h-1 bg-brand-orange mx-auto mb-6"></div>
-            <p className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
-              Find the perfect service provider for any job you need
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-6">
-            {serviceCategories.map((category) => (
-              <Link 
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 md:gap-6">
+            {categories.map((category, index) => (
+              <Link
+                key={index}
                 to={`/providers?category=${category.name}`}
-                key={category.name}
-                className="bg-white rounded-xl p-6 shadow-md text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-2 border border-gray-100"
+                className="bg-white rounded-lg shadow-sm p-6 text-center transition hover:shadow-md hover:bg-gray-50"
               >
-                <div className="text-4xl mb-4">{category.icon}</div>
-                <h3 className="font-medium text-gray-900">{category.name}</h3>
+                <div className="text-4xl mb-3">{category.icon}</div>
+                <h3 className="font-semibold text-gray-900">{category.name}</h3>
               </Link>
             ))}
           </div>
-          
-          <div className="text-center mt-12">
-            <Link to="/providers">
-              <Button className="bg-brand-blue hover:bg-brand-darkBlue text-white font-semibold px-8 py-3 shadow-md hover:shadow-lg transition-all duration-300">
-                Browse All Categories
-              </Button>
-            </Link>
-          </div>
         </div>
       </section>
 
-      {/* Featured Providers - Enhanced with better card design */}
-      <section className="py-20">
+      {/* Featured Providers */}
+      <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Featured Service Providers</h2>
-            <div className="w-20 h-1 bg-brand-orange mx-auto mb-6"></div>
-            <p className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
-              Highly rated professionals ready to help with your needs
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900">Featured Providers</h2>
+            <p className="mt-4 text-xl text-gray-600 max-w-2xl mx-auto">
+              Meet our top-rated service professionals
             </p>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredProviders.map((provider) => (
-              <Card key={provider.id} className="overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100">
-                <div className="relative">
-                  <img src={provider.image} alt={provider.name} className="object-cover w-full h-56" />
-                  <div className="absolute top-4 right-4 bg-white rounded-full px-3 py-1 flex items-center shadow-md">
-                    <Star className="w-4 h-4 text-yellow-500 fill-yellow-500 mr-1" />
-                    <span className="font-semibold text-gray-900">{provider.rating}</span>
-                  </div>
-                </div>
-                <CardContent className="p-6">
-                  <h3 className="text-xl font-semibold mb-2 text-gray-900">{provider.name}</h3>
-                  <div className="inline-block bg-blue-100 text-brand-blue text-sm font-medium px-3 py-1 rounded-full mb-4">
-                    {provider.service}
-                  </div>
-                  <p className="text-gray-600 mb-6 line-clamp-2">{provider.caption}</p>
-                  <Link to={`/providers/${provider.id}`}>
-                    <Button className="w-full bg-brand-blue hover:bg-brand-darkBlue text-white font-medium py-2.5">
-                      View Profile
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          
-          <div className="text-center mt-12">
+
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[...Array(4)].map((_, index) => (
+                <div key={index} className="animate-pulse bg-gray-100 rounded-lg h-64"></div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {featuredProviders.length > 0 ? (
+                featuredProviders.map(provider => (
+                  <ProviderCard key={provider.id} provider={provider} />
+                ))
+              ) : (
+                <p className="text-center col-span-4 py-8 text-gray-500">
+                  No providers available yet.
+                </p>
+              )}
+            </div>
+          )}
+
+          <div className="text-center mt-10">
             <Link to="/providers">
-              <Button className="bg-brand-blue hover:bg-brand-darkBlue text-white font-semibold px-8 py-3 shadow-md hover:shadow-lg transition-all duration-300">
+              <Button className="bg-brand-blue hover:bg-brand-darkBlue text-white">
                 View All Providers
               </Button>
             </Link>
@@ -230,57 +282,51 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Testimonials - Enhanced with better card design */}
-      <section className="py-20 bg-gray-50">
+      {/* Testimonials */}
+      <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">What Our Users Say</h2>
-            <div className="w-20 h-1 bg-brand-orange mx-auto mb-6"></div>
-            <p className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
-              Real experiences from people who found great service providers
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900">What Our Users Say</h2>
+            <p className="mt-4 text-xl text-gray-600 max-w-2xl mx-auto">
+              Don't take our word for it. Here's what our community thinks.
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial) => (
-              <div key={testimonial.id} className="bg-white p-8 rounded-xl shadow-md border border-gray-100 relative hover:shadow-lg transition-all duration-300">
-                <div className="absolute -top-5 left-1/2 transform -translate-x-1/2 bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-md">
-                  <span className="text-brand-orange text-xl font-bold">"</span>
+            {testimonials.map((testimonial, index) => (
+              <div key={index} className="bg-white rounded-lg p-6 shadow-sm">
+                <div className="text-4xl text-brand-blue mb-4">"</div>
+                <p className="text-gray-700 mb-6 italic">
+                  {testimonial.quote}
+                </p>
+                <div>
+                  <p className="font-semibold text-gray-900">{testimonial.author}</p>
+                  <p className="text-sm text-gray-600">{testimonial.role}</p>
                 </div>
-                <div className="flex mb-4 mt-3 justify-center">
-                  {[...Array(5)].map((_, i) => (
-                    <Star 
-                      key={i} 
-                      className={`w-5 h-5 ${i < testimonial.rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`} 
-                    />
-                  ))}
-                </div>
-                <p className="text-gray-600 mb-6 italic text-center">"{testimonial.text}"</p>
-                <p className="font-semibold text-gray-900 text-center">- {testimonial.name}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Join as Provider CTA - Enhanced with stronger gradient and better typography */}
-      <section className="py-16 bg-gradient-to-r from-brand-darkBlue to-brand-blue text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between">
-            <div className="mb-8 md:mb-0 md:mr-8">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Are You a Service Provider?</h2>
-              <p className="text-xl text-gray-100">
-                Join our platform to grow your business and connect with new clients.
-                Register now to create your profile and start receiving service requests.
-              </p>
-            </div>
-            <div className="flex-shrink-0">
-              <Link to="/signup">
-                <Button className="bg-brand-orange hover:bg-orange-600 text-white text-lg px-8 py-6 font-semibold shadow-lg hover:shadow-xl transition-all duration-300">
-                  Join as Provider
-                </Button>
-              </Link>
-            </div>
+      {/* CTA Section */}
+      <section className="py-16 bg-gradient-to-br from-brand-blue to-brand-darkBlue text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl font-bold">Ready to Get Started?</h2>
+          <p className="mt-4 text-xl max-w-2xl mx-auto">
+            Join our community of service seekers and providers today.
+          </p>
+          <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+            <Link to="/signup">
+              <Button className="w-full sm:w-auto bg-brand-orange hover:bg-orange-600 text-white text-lg py-6 px-8">
+                Sign Up Now
+              </Button>
+            </Link>
+            <Link to="/about">
+              <Button variant="outline" className="w-full sm:w-auto border-2 border-white bg-transparent hover:bg-white/10 text-white text-lg py-6 px-8">
+                Learn More
+              </Button>
+            </Link>
           </div>
         </div>
       </section>

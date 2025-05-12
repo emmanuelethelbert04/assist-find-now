@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { ref, get, update } from 'firebase/database';
 import { db } from '../../firebase/config';
 import { Button } from '../ui/button';
 import { toast } from "sonner";
 import { MessageSquare, Star } from 'lucide-react';
+import ReviewForm from '../ratings/ReviewForm';
 
 const RequestHistory = ({ seekerId }) => {
   const [requests, setRequests] = useState([]);
@@ -12,6 +12,8 @@ const RequestHistory = ({ seekerId }) => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [replyMessage, setReplyMessage] = useState('');
   const [providers, setProviders] = useState({});
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewingRequestId, setReviewingRequestId] = useState(null);
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -112,6 +114,17 @@ const RequestHistory = ({ seekerId }) => {
       toast.error("Failed to send message");
     }
   };
+  
+  const handleLeaveReview = (requestId, providerId) => {
+    setReviewingRequestId(requestId);
+    setShowReviewForm(true);
+  };
+  
+  const handleReviewComplete = () => {
+    setShowReviewForm(false);
+    setReviewingRequestId(null);
+    toast.success("Thank you for your review!");
+  };
 
   const formatDate = (timestamp) => {
     return new Date(timestamp).toLocaleString();
@@ -119,6 +132,33 @@ const RequestHistory = ({ seekerId }) => {
 
   if (loading) {
     return <div className="animate-pulse text-center p-4">Loading request history...</div>;
+  }
+
+  if (showReviewForm && reviewingRequestId) {
+    const request = requests.find(req => req.id === reviewingRequestId);
+    const providerId = request?.providerId;
+    
+    return (
+      <div>
+        <button
+          onClick={() => setShowReviewForm(false)}
+          className="mb-4 text-brand-blue hover:underline inline-flex items-center"
+        >
+          ← Back to requests
+        </button>
+        
+        <div className="bg-white border rounded-lg shadow-sm p-6">
+          <h3 className="text-xl font-medium mb-4">
+            Leave a review for {providers[providerId]?.displayName || 'Provider'}
+          </h3>
+          <ReviewForm 
+            providerId={providerId} 
+            serviceRequestId={reviewingRequestId}
+            onReviewSubmitted={handleReviewComplete}
+          />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -149,6 +189,7 @@ const RequestHistory = ({ seekerId }) => {
                 <div className={`px-2 py-1 rounded text-sm ${
                   selectedRequest.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                   selectedRequest.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                  selectedRequest.status === 'completed' ? 'bg-blue-100 text-blue-800' :
                   'bg-red-100 text-red-800'
                 }`}>
                   {selectedRequest.status.charAt(0).toUpperCase() + selectedRequest.status.slice(1)}
@@ -203,12 +244,12 @@ const RequestHistory = ({ seekerId }) => {
               </div>
             </div>
             
-            {/* Add review option for completed/accepted services */}
-            {selectedRequest.status === 'accepted' && (
+            {/* Add review option for completed services */}
+            {selectedRequest.status === 'completed' && (
               <div className="p-4 border-t">
                 <Button
                   className="w-full bg-brand-orange hover:bg-orange-600 text-white flex items-center justify-center"
-                  onClick={() => navigate(`/review/${selectedRequest.id}`)}
+                  onClick={() => handleLeaveReview(selectedRequest.id, selectedRequest.providerId)}
                 >
                   <Star className="mr-2 h-4 w-4" />
                   Leave a Review
@@ -246,6 +287,7 @@ const RequestHistory = ({ seekerId }) => {
                     <div className={`px-2 py-1 rounded text-sm ${
                       request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                       request.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                      request.status === 'completed' ? 'bg-blue-100 text-blue-800' :
                       'bg-red-100 text-red-800'
                     }`}>
                       {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
@@ -254,14 +296,26 @@ const RequestHistory = ({ seekerId }) => {
                   
                   <div className="mt-2 flex items-center justify-between">
                     <p className="text-sm text-gray-700 truncate max-w-md">{request.message}</p>
-                    <Button 
-                      onClick={() => setSelectedRequest(request)}
-                      variant="outline"
-                      className="text-sm"
-                    >
-                      <MessageSquare className="mr-1 h-4 w-4" />
-                      View Details
-                    </Button>
+                    <div className="flex space-x-2">
+                      {request.status === 'completed' && (
+                        <Button
+                          onClick={() => handleLeaveReview(request.id, request.providerId)}
+                          variant="outline"
+                          className="text-sm flex items-center"
+                        >
+                          <Star className="mr-1 h-4 w-4" />
+                          Review
+                        </Button>
+                      )}
+                      <Button 
+                        onClick={() => setSelectedRequest(request)}
+                        variant="outline"
+                        className="text-sm flex items-center"
+                      >
+                        <MessageSquare className="mr-1 h-4 w-4" />
+                        Details
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}

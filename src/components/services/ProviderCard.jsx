@@ -1,28 +1,35 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Star } from 'lucide-react';
+import { ref, onValue } from 'firebase/database';
+import { db } from '../../firebase/config';
+import RatingStars from '../ratings/RatingStars';
 
 const ProviderCard = ({ provider }) => {
-  // Calculate average rating
-  const avgRating = provider.reviews 
-    ? provider.reviews.reduce((acc, review) => acc + review.rating, 0) / provider.reviews.length
-    : 0;
+  const [rating, setRating] = useState(0);
+  const [reviewCount, setReviewCount] = useState(0);
   
-  const ratingStars = [];
-  
-  for (let i = 1; i <= 5; i++) {
-    if (i <= avgRating) {
-      // Full star
-      ratingStars.push(<Star key={i} className="w-4 h-4 text-yellow-500 fill-yellow-500" />);
-    } else if (i - 0.5 <= avgRating) {
-      // Half star
-      ratingStars.push(<Star key={i} className="w-4 h-4 text-yellow-500 fill-yellow-500" />);
-    } else {
-      // Empty star
-      ratingStars.push(<Star key={i} className="w-4 h-4 text-yellow-500" />);
-    }
-  }
+  useEffect(() => {
+    if (!provider.id) return;
+    
+    const reviewsRef = ref(db, `ratings/${provider.id}`);
+    const unsubscribe = onValue(reviewsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const reviewsData = Object.values(snapshot.val());
+        const totalRating = reviewsData.reduce((sum, review) => sum + review.rating, 0);
+        const avgRating = totalRating / reviewsData.length;
+        
+        setRating(avgRating);
+        setReviewCount(reviewsData.length);
+      } else {
+        setRating(0);
+        setReviewCount(0);
+      }
+    });
+    
+    return () => unsubscribe();
+  }, [provider.id]);
   
   return (
     <Link 
@@ -59,12 +66,10 @@ const ProviderCard = ({ provider }) => {
           {provider.category || 'Service Provider'}
         </p>
         
-        <div className="mt-2 flex items-center">
-          <div className="flex items-center">
-            {ratingStars}
-          </div>
+        <div className="mt-2">
+          <RatingStars rating={rating} size="small" />
           <span className="ml-2 text-sm text-gray-500">
-            {provider.reviews ? `(${provider.reviews.length})` : '(0)'}
+            ({reviewCount})
           </span>
         </div>
         

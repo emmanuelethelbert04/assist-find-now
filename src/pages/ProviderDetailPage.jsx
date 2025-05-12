@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ref, get } from 'firebase/database';
@@ -9,6 +8,8 @@ import { MapPin, Phone, Mail, Star, Clock, DollarSign } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import Layout from '../components/layout/Layout';
 import ServiceRequestForm from '../components/services/ServiceRequestForm';
+import ReviewsList from '../components/ratings/ReviewsList';
+import ReviewForm from '../components/ratings/ReviewForm';
 
 const ProviderDetailPage = () => {
   const { providerId } = useParams();
@@ -17,6 +18,8 @@ const ProviderDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [selectedService, setSelectedService] = useState(null);
   const [showRequestForm, setShowRequestForm] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [pastRequests, setPastRequests] = useState([]);
   
   const { currentUser, userRole } = useAuth();
   const navigate = useNavigate();
@@ -55,6 +58,31 @@ const ProviderDetailPage = () => {
             setSelectedService(servicesArray[0]);
           }
         }
+        
+        // If logged in as a seeker, fetch past completed requests to enable reviews
+        if (currentUser && userRole === 'seeker') {
+          const requestsRef = ref(db, `requests`);
+          const requestsSnapshot = await get(requestsRef);
+          
+          if (requestsSnapshot.exists()) {
+            const requestsData = requestsSnapshot.val();
+            const userCompletedRequests = [];
+            
+            Object.keys(requestsData).forEach(key => {
+              const request = requestsData[key];
+              if (request.seekerId === currentUser.uid && 
+                  request.providerId === providerId && 
+                  request.status === 'completed') {
+                userCompletedRequests.push({
+                  id: key,
+                  ...request
+                });
+              }
+            });
+            
+            setPastRequests(userCompletedRequests);
+          }
+        }
       } catch (error) {
         console.error("Error fetching provider data:", error);
         toast.error("Failed to load provider information");
@@ -66,7 +94,7 @@ const ProviderDetailPage = () => {
     if (providerId) {
       fetchProviderData();
     }
-  }, [providerId, navigate]);
+  }, [providerId, navigate, currentUser, userRole]);
 
   const handleRequestService = () => {
     if (!currentUser) {
@@ -85,6 +113,26 @@ const ProviderDetailPage = () => {
 
   const handleRequestSent = () => {
     setShowRequestForm(false);
+  };
+
+  const handleToggleReviewForm = () => {
+    if (!currentUser) {
+      toast.error("Please log in to write a review");
+      navigate('/login');
+      return;
+    }
+    
+    if (userRole !== 'seeker') {
+      toast.error("Only service seekers can write reviews");
+      return;
+    }
+    
+    if (pastRequests.length === 0) {
+      toast.error("You can only review providers after using their services");
+      return;
+    }
+    
+    setShowReviewForm(!showReviewForm);
   };
 
   const formatRating = (reviews) => {
@@ -280,37 +328,29 @@ const ProviderDetailPage = () => {
             
             {/* Reviews */}
             <div className="mt-6 bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-xl font-semibold mb-4">Reviews</h2>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold">Reviews</h2>
+                {userRole === 'seeker' && pastRequests.length > 0 && (
+                  <Button
+                    onClick={handleToggleReviewForm}
+                    className="bg-brand-orange hover:bg-orange-600 text-white"
+                  >
+                    {showReviewForm ? 'Cancel' : 'Write a Review'}
+                  </Button>
+                )}
+              </div>
               
-              {!provider.reviews || provider.reviews.length === 0 ? (
-                <p className="text-gray-500">No reviews yet for this provider.</p>
-              ) : (
-                <div className="space-y-4 divide-y divide-gray-200">
-                  {provider.reviews.map((review, index) => (
-                    <div key={index} className={`${index > 0 ? 'pt-4' : ''}`}>
-                      <div className="flex items-center">
-                        <div className="flex space-x-1">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <Star 
-                              key={star} 
-                              className={`w-4 h-4 ${
-                                star <= review.rating
-                                  ? 'text-yellow-500 fill-yellow-500'
-                                  : 'text-gray-300'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                        <span className="ml-2 text-sm font-medium">{review.userName}</span>
-                        <span className="ml-2 text-xs text-gray-500">
-                          {new Date(review.timestamp).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-gray-700">{review.comment}</p>
-                    </div>
-                  ))}
+              {showReviewForm && (
+                <div className="mb-6 p-4 border rounded-md bg-gray-50">
+                  <h3 className="text-lg font-medium mb-3">Write Your Review</h3>
+                  <ReviewForm 
+                    providerId={providerId} 
+                    serviceRequestId={pastRequests[0]?.id} 
+                  />
                 </div>
               )}
+              
+              <ReviewsList providerId={providerId} />
             </div>
           </div>
           
